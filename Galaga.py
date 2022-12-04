@@ -13,6 +13,7 @@ class Galaga(arcade.Window):
         self.enemies_dy = 0
         self.score = 0
         self.lives = 3
+        self.lives_counter = arcade.SpriteList()
         self.enemy_speed = .5
         self.shot_speed = 5
         self.music = None
@@ -27,11 +28,17 @@ class Galaga(arcade.Window):
             enemy.center_x = random.randint(64, 736)
             enemy.center_y = random.randint(1200, 1600)
             self.enemies.append(enemy)
+        for num in range(self.lives):
+            life = arcade.Sprite("ship8up.png", .25)
+            life.center_x = len(self.lives_counter) * 16 + 16
+            life.center_y = 16
+            self.lives_counter.append(life)
     def on_draw(self):
         arcade.start_render()
         self.ship.draw()
         self.enemies.draw()
         self.shots.draw()
+        self.lives_counter.draw()
         arcade.finish_render()
     def on_key_press(self, symbol: int, modifiers: int):
         if symbol == arcade.key.LEFT:
@@ -53,7 +60,7 @@ class Galaga(arcade.Window):
         if symbol == arcade.key.LEFT or symbol == arcade.key.RIGHT:
             self.ship_dx = 0
     def on_update(self, delta_time: float):
-        if self.score >= 2:
+        if self.score >= 20:
             arcade.play_sound(self.music)
         self.ship.center_x += self.ship_dx
         if self.ship.center_x <= 64 or self.ship.center_x >= 736:
@@ -70,3 +77,15 @@ class Galaga(arcade.Window):
                     self.enemies.remove(enemy)
                     self.score += 1
                     self.shots.remove(shot)
+                    new_enemy = arcade.Sprite("Enemy.png")
+                    new_enemy.center_x = random.randint(64, 736)
+                    new_enemy.center_y = random.randint(1600, 2000)
+                    self.enemies.append(new_enemy)
+        life_lost = arcade.check_for_collision_with_list(self.ship, self.enemies)
+        if life_lost:
+            for enemy in life_lost:
+                self.lives -= 1
+                for life in self.lives_counter[-1]:
+                    self.lives_counter.remove(life)
+                self.enemies.remove(enemy)
+
