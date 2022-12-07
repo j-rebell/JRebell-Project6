@@ -17,11 +17,14 @@ class Galaga(arcade.Window):
         self.lives = 3
         #Implimented a 3 life system drawn on the bottom left of the screen
         self.lives_counter = arcade.SpriteList()
-        self.enemy_speed = .5
+        self.enemy_speed = 1
         self.shot_speed = 5
         self.music = None
         self.game_over = None
         self.won = None
+        self.music_counter = 0
+        self.music_playing = None
+        self.win_counter = 0
         #Everyhting I currently need to make the game work at a basic level
     def setup(self):
         #Ship came from the zip file. Self music ended up being unused as arcade is not happy to play any version of the file I give, mp3 or wav even in mono
@@ -54,22 +57,21 @@ class Galaga(arcade.Window):
         #Setting up the game over screen
         if self.lives < 1:
             self.game_over.draw()
-        self.score_text = arcade.Text(f"{self.score * 1000}", 736, 16, arcade.color.WHITE, 16)
+        self.score_text = arcade.Text(f"{int(self.score * 1000)}", 736, 16, arcade.color.WHITE, 16)
         self.score_text.draw()
         #Telling the player they won
         if self.score >= 20:
-            self.won = arcade.Text(f"You won!\nYour score was, {self.score * 1000}", 16, 800, arcade.color.GREEN, 25)
+            self.won = arcade.Text(f"You won!\nYour score was, {int(self.score * 1000)}", 16, 800, arcade.color.GREEN, 25)
             self.won.draw()
+            self.win_counter += 1
         arcade.finish_render()
         #Pyhton did not enjoy sleeping during the render. I'm sure there is a cleaner way to handle this but it works.
-        if self.score >= 20:
-            time.sleep(5)
-            arcade.close_window()
+
     def on_key_press(self, symbol: int, modifiers: int):
         if symbol == arcade.key.LEFT:
-            self.ship_dx = -4
+            self.ship_dx = -5
         elif symbol == arcade.key.RIGHT:
-            self.ship_dx = 4
+            self.ship_dx = 5
         if symbol == arcade.key.SPACE:
             if len(self.shots) < 5:
                 shot = arcade.Sprite("shot.png")
@@ -91,8 +93,11 @@ class Galaga(arcade.Window):
             self.ship_dx = 0
     def on_update(self, delta_time: float):
         #Again not used but left in for attempts in the future
-        if self.score >= 50:
-            arcade.play_sound(self.music)
+        if self.score >= 10 and self.music_counter == 0:
+            self.enemy_speed *= 4
+            self.music_playing = arcade.play_sound(self.music)
+            self.music_counter += 1
+            arcade.set_background_color(arcade.color.MAROON)
         #Handling player borders. Not elegant and can be overcome but works well enough
         self.ship.center_x += self.ship_dx
         if self.ship.center_x <= 64 or self.ship.center_x >= 736:
@@ -100,6 +105,13 @@ class Galaga(arcade.Window):
         #Used to make the enemies move towards the player
         for enemy in self.enemies:
             enemy.center_y += -self.enemy_speed
+            if enemy.center_y <0:
+                self.enemies.remove(enemy)
+                new_enemy = arcade.Sprite("Enemy.png")
+                new_enemy.center_x = random.randint(64, 736)
+                new_enemy.center_y = random.randint(1600, 2000)
+                self.enemies.append(new_enemy)
+                self.score -= .5
         #Sprite list to control the laser sprite list. Speed can easily be changed for fine tuning.
         for shot in self.shots:
             shot.center_y += self.shot_speed
@@ -129,8 +141,16 @@ class Galaga(arcade.Window):
                 self.lives -= 1
                 self.enemies.remove(enemy)
                 self.lives_counter.remove(rem_life)
+                new_enemy = arcade.Sprite("Enemy.png")
+                new_enemy.center_x = random.randint(64, 736)
+                new_enemy.center_y = random.randint(1600, 2000)
+                self.enemies.append(new_enemy)
         #Closing the window after a loss
         if self.lives < 1:
+            time.sleep(5)
+            arcade.close_window()
+        if self.win_counter > 0:
+            arcade.stop_sound(self.music_playing)
             time.sleep(5)
             arcade.close_window()
 
